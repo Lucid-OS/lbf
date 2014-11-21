@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+##Created by Edward "edge226" Tunnah.
+
+## cleanbuildroot will create or clean the build root. It interfaces with
+## parts of devtools in order to remove and recreate a fresh build
+## root. Normally this is not needed but is neccessary if we point to a
+## different repository. For instance switching from arch repositories
+## into using a local repository to do the builds.
+
+source /etc/lbf/lbf.conf
+
+while getopts "c:m:svph" opt; do
+  case "$opt" in
+    c)  pacconf=$OPTARG;;
+    m)  makeconf=$OPTARG;;
+    s)  continue ;;
+    v)  verbose="yes";;
+    p)  pretend="yes";;
+    h)  printf '%s\n' "$cleanbuildroot_usage"; exit 0;;
+    \?) printf '%s\n' "$cleanbuildroot_usage" >&2; exit 1;;
+  esac
+done
+
+OPTIND=1 ## make sure the optargs are reset for getopts
+
+printf "Printing variables used in this script:\n%s\n%s\n%s\n\n" "$pacconf" "$makeconf" "$buildroot/root"
+printf "Cleaning/Creating the build root.\n"
+
+if [ ! "$pretend" = "yes" ]; then
+
+            ## If you're running this script you wanted
+  rm -rf "$buildroot" ## to clean your build root. This will do that.
+  rm -rf "$buildroot" ## Do it twice because once sometimes does not
+            ## clear all required files.
+
+  mkdir -p "$buildroot" ## Recreate the entire buildroot.
+
+  ## Create a new root structure to be used in building.
+
+  if [ "$verbose" = "yes" ]; then
+    mklucidroot -C "$pacconf" -M "$makeconf" "$buildroot/root" "base-devel"
+  else
+    mklucidroot -C "$pacconf" -M "$makeconf" "$buildroot/root" "base-devel" > /lucid/repo/
+  fi
+fi
+
+exit 0

@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+##Created by Edward "edge226" Tunnah.
+
+## Clean all variables used within the lucid build framework.
+clearvars() {
+	## grab the list of variables used within the entire functionality
+	## this prevents over riding any variable on the command line that
+	## would skip or allow different functionality than desired by
+	## the developer for security reasons.
+	source /etc/lbf/lbf.vars
+	
+	for entry in "${lbf_vars[@]}" ; do
+		printf '%s%s%s\n' "Clearing the variable ""$entry"" now."
+		unset "$entry"
+	done
+}
+clearvars
+
+## imports program usage from config files.
+source /etc/lbf/lbf.conf
+source /etc/lbf/lbf.usage
+
+## The main stuff.
+
+OPTIND=1 ## make sure the optargs are reset for getopts
+
+## This case statement sets the build parameters of the program for
+## which architecture to use.
+while getopts "s:pvClbrh" opt; do
+    case "$opt" in
+        s)  	lbf_vars+=("-s" "$OPTARG");; ## This could be depreciated later.
+        p)  	lbf_vars+=("-p");;
+        v)		lbf_vars+=("-v");;
+        C)      cbr_run="yes"
+				while getopts "c:m:h" opt; do
+					case "$opt" in
+						c)  cbr+=("-c" "$OPTARG");;
+						m)  cbr+=("-m" "$OPTARG");;
+						h)  cbr+=("-h");;
+						\?) printf '%s\n' "$cleanbuildroot_usage" >&2; exit 1;;
+					esac
+				done;;
+        l)      cl_run="yes"
+				while getopts "s:h" opt; do
+					case "$opt" in
+						s)		cl+=("-s" "$OPTARG");;
+						h)      cl+=("-h");;
+						\?)     printf '%s\n' "$checklinks_usage" >&2; exit 1;;	
+					esac
+				done;;
+		b)		lb_run="yes"
+				while getopts "a:h" opt; do
+					case "$opt" in
+						a)  buildarch=$OPTARG
+						    if [ "$buildarch" = "multilib" ]; then
+						 		buildarch="x86_64"
+						    fi
+							lb+=("-b" "$buildarch");;
+						h)  printf '%s\n' "$lucid-build_usage"; exit 0;;
+						\?) printf '%s\n' "$lucid-build_usage" >&2; exit 1;;
+					esac
+				done;;
+		r)		repomod_run="yes"
+				while getopts "d:b:r:h" opt; do
+					case "$opt" in
+						d)  repodir=$OPTARG;;
+						b)  branch=$OPTARG;;
+						r)	repo=$OPTARG;;
+						h)  printf '%s\n' "$lucid-build_usage"; exit 0;;
+						\?) printf '%s\n' "$lucid-build_usage" >&2; exit 1;;
+					esac
+				done;;
+        h)      printf '%s\n' "$lb_usage"; exit 0;;
+        \?)     printf '%s\n' "$lb_usage" >&2; exit 1;;
+    esac
+done
+
+## Check for root! If the user is not running the script as root advise
+## that root is required to operate this script and then drop out. If
+## the script is run as root then continue.
+##if [ "$EUID" != "0" ]; then
+    ##printf "error: This script must be run as root.\n"
+    ##exit 1
+##fi
+
+    ## Finally find the pkgbuilds and build them!
+    ##find "$searchdir" -name PKGBUILD -type f -execdir "$buildcmd" "$compilecmd" "$buildarch" "$repodir/$branch/$buildarch/$repo" "$verbose" "$checklinks" "$pretend" "$buildroot" \;
+
+#if [ "$cbr_run" = "yes" ]; then
+	#cbr+=("${lbf_vars[@]}")
+	#cleanbuildroot "${cbr[@]}"
+#fi
+
+#if [ "$cl_run" = "yes" ]; then
+	#cl+=("${lbf_vars[@]}")
+	#check-links "${cl[@]}"
+#fi

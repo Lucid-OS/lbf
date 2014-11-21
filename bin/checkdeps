@@ -1,0 +1,624 @@
+#!/usr/bin/env bash
+##Created by Edward "edge226" Tunnah.
+
+## Checks the dependencies of a program and writes it to /tmp/lbf/ in a
+## directory structure.
+
+
+
+## unset possibly used variables.
+unset pkgname depends makedepends checkdepends optdepends origin tmpdir origin_pass origin_set origin_list
+
+## This is needed for checkdeps_pkgbuild_array and checkdeps_array.
+source /etc/lbf/lbf.vars
+
+## imported this to set gitrepodir and tmpdir.
+source /etc/lbf/lbf.conf
+source /etc/lbf/lbf.usage
+run_again="checkdeps"
+
+unset searchdir
+origin=""
+OPTIND=1 ## make sure the optargs are reset for getopts
+
+while getopts "t:f:n:o:S:G:rRsgivph" opt; do  ## Standard getopts while loops for
+                               ## dealing with options.
+    case "$opt" in
+        v)  verbose="yes";;
+        p)  pretend="yes"
+            verbose="yes";;
+        n)  name=$OPTARG;;
+        t)  tmpdir=$OPTARG;;
+        o)  origin_tmpdir=$OPTARG;;
+        f)  origin_file=$OPTARG;;
+        S)  suborigin_file=$OPTARG;;
+        s)  step="yes";;
+        g)  create_group="yes"
+            recursive="yes";;
+        G)  group_file=$OPTARG;;
+        i)  info="yes";;
+        R)  create_repo="yes";;
+        L)  level=$OPTARG;;
+        r)  recursive="yes";;
+        h)  printf '%s\n' "$checkdeps_usage"; exit 0;;
+        \?) printf '%s\n' "$checkdeps_usage" >&2; exit 1;;
+    esac
+done
+
+check_name_set() { ## Name is the main input method.
+    ## This function determines if the name has been set or not.
+    ## This logic could be used to check any needed variable I simply
+    ## use it to check the name.
+
+    ## Sets the default for empty_name since it is global.
+    empty_name="0"
+    ## Checks the checkdeps_vars array in lbf.vars which is used to
+    ## verify the required variables are set.
+    for flag_set in "${checkdeps_vars[@]}"; do
+        typeset -n local ref="$flag_set" ## This makes it so we can use the inside information.
+        ## Many variables are set to yes or no. This strips out those entries. It is done to prevent useless debug information.
+        if [[ ! "$ref" = "no" ]] && [[ ! "$ref" = "yes" ]]
+        then
+            #printf '\n%s %s\n' "Calculating variables:" "$ref"
+            if [[ "$ref" = "" ]] && [[ "$empty_name" != "1" ]]
+            ## This statement makes sure the name has not already been set
+            ## before setting the empty_name variable to 0 which is the
+            ## setting if the name has not been set.
+            then
+                #printf "Setting empty_name to 0\n"
+                empty_name="0"
+            elif [[ ! "$ref" = "" ]] && [[ "$ref" = "$name" ]]
+            ## This specifically checks against the name variable.
+            then
+                #printf "Setting empty_name to 1\n"
+                empty_name="1"
+            fi
+        fi
+    done
+}
+
+create_group_origin() { ## sets all information if a group name is sent
+    ## to $name with the -g flag. eg. checkdeps -gn base
+
+    ## groupname is set to packages in the name of the group passed to
+    ## checkdeps. It is only used within this function so it is set to local.
+    ## This means it will not show up outside this function.
+    local groupname=( $( pacman -Ssgq "$name" ) )
+    printf '\n%s %s\n' "This will scan everything in group" "$name"
+    #printf '%s\n' "${groupname[@]}"
+
+    ## Sets the minimum amount of informational files required to initiate
+    ## a recursion scan.
+    origin_file="$tmpdir/origin"
+    suborigin_file="$tmpdir/suborigin"
+    origin_tmpdir="$tmpdir"
+    group_file="$tmpdir/origin_$name"
+
+    ## Scans through the groupname array.
+    for depname in "${groupname[@]}"; do
+        ## Check whether $depname needs action taken based upon the iteration.
+        ## $match comes from checktodo.
+        check_todo "$depname" "$suborigin_file"
+        if [[ "$match" = "0" ]]
+        then
+            if [[ ! -d "$tmpdir/$name/$depname" ]]
+            ## check if the directory structure for groups is created.
+            ## If it is not created then create it.
+            then
+                mkdir -p "$tmpdir/$name/$depname"
+            fi
+            ## write the dep to an origin list and the suborigin file.
+            printf '%s\n' "$depname" >> "$tmpdir/origin_list"
+            printf '%s\n' "$depname" >> "$tmpdir/suborigin"
+        fi
+    done
+}
+
+## This function sets all the parameters for the program to operate correctly
+set_params() {
+    check_name_set ## checks whether the name flag has been set.
+    if [[ "$empty_name" = "0" ]]
+    ## Name will not have been set if this variable = 0.
+    then
+        printf "Please enter a name to start the search: "
+        read name
+        if [[ "$recursive" = "" ]]
+        ## Check if the user wants to run this as recursive or not.
+        ##This function needs to be updated to include asking for group as well.
+        then
+            while [[ "$recursive" = "" ]] || [[ "$recursive" != "yes" ]] || [[ "$recursive" != "no" ]]
+            do
+                printf "Would you like to run recursively? (yes/No) "
+                read recursive
+                if [[ "$recursive" = "" ]]
+                then
+                    recursive="no"
+                fi
+                if [[ "$recursive" = "yes" ]] || [[ "$recursive" = "no" ]]
+                then
+                    break
+                fi
+            done
+        fi
+    fi
+
+    if [[ ! "$name" = "" ]]
+    ## name should no longer be blank so we can continue with setting the parameters.
+    then
+        if [[ "$tmpdir" = "/tmp/lbf" ]]
+        ## This checks if the tmpdir is the default or not.
+        then
+            if [[ "$info" != "yes" ]]
+            ## make sure not to attept to create a directory tree if the user only wants information.
+            then
+                if [[ "$origin_file" = "" ]]
+        ## sets the origin file location if it is not set.
+                then
+                    origin_file="$tmpdir/origin"
+                fi
+                if [[ "$suborigin_file" = "" ]]
+                ## sets the suborigin file location if it is not set.
+                then
+                    suborigin_file="$tmpdir/suborigin"
+                fi
+                ## sets the origin tmpdir and the new tmpdir.
+                origin_tmpdir="$tmpdir"
+                tmpdir="$tmpdir/$name"
+            fi
+        fi
+        if [[ "$treeloc_file" = "" ]]
+        ## sets the treeloc file location if it is not set.
+        then
+            treeloc_file="$tmpdir/treeloc"
+        fi
+        if [[ "$searchdir" = "" ]]
+        ## sets the searchdir location if it is not set.
+        then
+            searchdir=$( find "$gitrepodir" -name "$name" -type d -print0 )
+            #printf '\n%s %s\n' "Setting searchdir to:" "$searchdir"
+        fi
+    fi
+
+    if [[ "$searchdir" != "" ]]
+    ## What to do if the searchdir has been set correctly.
+    then
+        #printf '\n%s %s\n' "Going into searchdir:" "$searchdir"
+        if [[ -d "$searchdir" ]]
+        ## Make sure searchdir exists then cd into it, exit upon failure.
+        then
+            cd "$searchdir" || exit
+        fi
+        #printf '\ntmpdir is %s\n' "$tmpdir"
+        #printf '\n%s %s\n' "source ./PKGBUILD for:" "$searchdir"
+        if [[ -f ./PKGBUILD ]]
+        ## check if the sourcedir contains a PKGBUILD file and source it
+        ## if it exists.
+        then
+            source ./PKGBUILD
+            #printf '%s\n' "Running ls -ld PKGBUILD: "
+            #ls -ld ./PKGBUILD
+        elif [[ ! -f ./PKGBUILD ]]
+        ## Sets the action to take if the PKGBUILD file does not exist.
+        then
+            printf '%s\n' "This PKGBUILD file does not exist."
+            printf '%s\n' "$checkdeps_usage" >&2; exit 1
+        fi
+
+        if [[ "$origin" = "" ]]
+        ## some PKGBUILD files create multiple packages. This makes sure
+        ## we do not get false data and write a correct entry.
+        then
+            for pkg in "${pkgname[@]}"; do ## Scan all entries in the pkgname
+                if [[ "$pkg" = "$name" ]]
+                ## This makes sure the correct entry gets set to origin and added to the provides array.
+                then
+                    origin="$pkg"
+                    provides_array+=( "$pkg" )
+                elif [[ "$pkg" = "$name" ]] || [[ ! "$pkg" = "$name" ]]
+                ## for extra packages just add them to the provides array.
+                then
+                    provides_array+=( "$pkg" )
+                fi
+            done
+            #printf '\n%s\n' "privides is set to:"
+            #printf '%s\n' "${provides[@]}"
+        fi
+
+        if [[ "$origin_list_file" = "" ]]
+        ## sets the origin list file if it is not set.
+        then
+            origin_list_file="$tmpdir/origin_list"
+            #printf '\n%s %s\n' "origin_list_file set to:" "$origin_list_file"
+        fi
+        if [[ "$provides_file" = "" ]]
+        ## sets the provides file if it is not set.
+        then
+            provides_file="$tmpdir/provides"
+        fi
+        if [[ "$repo_file" = "" ]]
+        ## sets the repo file if it is not set.
+        then
+            repo_file="$tmpdir/repo"
+        fi
+        if [[ "$group_file" = "" ]]
+        ## sets the group file if it is not set.
+        then
+            group_file="$tmpdir/origin_$name"
+        fi
+    elif [[ "$searchdir" = "" ]]
+    ## If searchdir has not been set correctly then exit.
+    then
+        exit 1
+    fi
+}
+
+check_todo(){ ## checks if the file has already been scanned or not.
+    local check_match="$1" ## The entry sent to check against.
+    local check_file="$2"  ## The file sent to check against.
+    match="0" ## Reset the parameter in case we have already checked something else.
+    if [[ -f "$check_file" ]]
+    ## make sure the file sent to check against exists.
+    then
+        while IFS= read -r line; do ## Read through the file.
+            if [[ "$line" = "$check_match" ]]
+            ## This will tell if the entry has already been written to
+            ## the particular file being tested.
+            then
+                match="1"
+                break
+            elif [[ "$line" != "$check_match" ]]
+            ## This is what will run through if the entries do not match.
+            then
+                if [[ "$match" != "1" ]]
+                ## make sure the entry has not already been found.
+                then
+                    match="0"
+                fi
+            fi
+        done < "$check_file" ## This sends the file to read in the while loop. This is where line comes from.
+    fi
+    #printf '\n%s %s%s %s\n' "This is the check done status for" "$check_match" ":" "$match"
+    #read
+}
+
+write_provides(){ ## writes the package names that the pkgbuild compile will provide.
+    for pkg in "${provides_array[@]}"; do ## scan through provies array.
+        if [[ "$pkg" != "" ]]
+        ## Check if the name is not blank.
+        then
+      ## Write the provides and origin files.
+            printf '%s\n' "$pkg" >> "$provides_file"
+            printf '%s\n' "$pkg" >> "$origin_file"
+        fi
+    done
+}
+
+get_repo() { ## removes the program name, forward slashes and prefix of the repository name.
+    repo="$searchdir" ## sets repo as searchdir.
+    #printf '\n%s %s\n' "repo is" "$repo"
+    repo=${repo%%"/$origin"}  ## strips the name off the end.
+    #printf '\n%s %s\n' "repo is" "$repo"
+    repo=${repo##*/} ## strips everything preceeding the repo.
+    #printf '\n%s %s\n' "repo is" "$repo"
+    #read < /dev/tty
+}
+
+write_treeloc() { ## writes the treeloc to the treeloc file.
+    local treeloc="$tmpdir" ## sets treeloc as the tmpdir variable.
+    treeloc=${treeloc##/tmp/lbf/} ## remove the preceeding /tmp/lbf/
+    printf '%s\n' "$treeloc" > "$treeloc_file" ## write to the file.
+}
+
+get_spawned_from() { ## get where the search spawned from.
+    spawned_from="$tmpdir" ## set the tmpdir as spawned_from to be parsed.
+    #printf '\n%s %s\n' "spawned_from origininates from" "$spawned_from"
+    spawned_from=${spawned_from##/tmp/lbf/} ## remove /tmp/lbf/ from the start.
+    #printf '\n%s %s\n' "spawned_from has some stripped off the start" "$spawned_from"
+    while [[ "$spawned_from" = */* ]] && [[ "$spawned_from" = */*/*/* ]]  ## this if never triggers
+    ## we want this to be equivelent to */*/* so anything bigger will have a section stripped.
+    do
+        spawned_from=${spawned_from%/*}
+        #printf '%s %s %s\n' "spawned_from has been changed to" "$spawned_from" "by removing all except three limiters."
+    done
+}
+
+write_spawned_from() { ## writes the spawned from file.
+    get_spawned_from ## get the location in which this search spawned from.
+    if [[ "$spawned_from" != "" ]]
+    ## Only run this stuff if spawned from is not blank.
+    then
+        if [[ "$spawned_from_file" = "" ]] && [[ "$tmpdir" != "" ]]
+        ## If the spawned_from file is blank and tmpdir is not blank
+        ## then set it and write the file.
+        then
+            spawned_from_file="$tmpdir/spawned_from"
+        fi
+        #if [[ ! -f "$spawned_from_file" ]]
+        #then
+            ##printf '\n%s %s\n' "This is the spawned from file:" "$spawned_from_file"
+            #touch "$spawned_from_file"
+        #fi
+        ## write the information to the spawned from file.
+        printf '%s\n' "$spawned_from" >> "$spawned_from_file"
+    fi
+}
+
+write_group_file() { ## This function writes the group file.
+    get_repo ## get the repo
+    get_spawned_from ## get the spawned from.
+    #printf '%s %s %s %s\n' "Writing these entries to the group file:" "$origin" "$spawned_from" "$repo"
+    ## write them to the group file.
+    printf '%s %s %s\n' "$origin" "$spawned_from" "$repo" >> "$group_file"
+    #read < /dev/tty
+}
+
+## Sets the origin name. This is important for dealing with nested
+## iterations of this program.
+create_origins() { ## creates an origin set that gathers data used in nesting.
+    #printf '\n%s\n' "Running create_origins: "
+    ## make sure depbase and depname are unset.
+    unset depbase depname
+    #printf '\n%s %s\n' "tmpdir set to:" "$tmpdir"
+        ## check whether the program name has already been written to the origin file.
+        check_todo "$origin" "$origin_file"
+        if [[ "$match" = "0" ]]
+        ## if the program has not been put into the origin file already.
+        then
+            if [[ ! -d "$tmpdir" ]]
+            ## check if tmpdir exists.
+            then
+                #printf '\n%s %s\n' "creating tmpdir directory:" "$tmpdir"
+                ## create tmpdir.
+                mkdir -p "$tmpdir"
+                #read
+            fi
+        fi
+
+        get_repo ## grab the repo information.
+        if [[ ! -f "$repo_file" ]]
+        ## if the repo file does not exist then write the appropriate information to it.
+        then
+            printf '%s\n' "$repo" > "$repo_file"
+            printf '%s\n' "$searchdir" >> "$repo_file"
+        fi
+        if [[ ! -f "$origin_file" ]]
+        ## if the origin file does not exist then write the appropriate information to it.
+        then
+            if [[ "$origin" != "" ]]
+            ## make sure the origin is not blank before writing the file.
+            then
+                touch "$origin_file"
+                write_provides
+                write_treeloc
+                write_group_file "$origin"
+                write_spawned_from
+            fi
+        elif [[ -f "$origin_file" ]]
+        ## If the origin file already exists we have no reason to touch
+        ## the file to make sure it exists.
+        ## This writes the needed information to the appropriate files.
+        then
+            if [[ "$match" = "0" ]] && [[ "$origin" != "" ]]
+            ## Makes sure the entry is not already in the origin file
+            ## and that the origin is not blank.
+            then
+                write_provides
+                write_treeloc
+                write_group_file "$origin"
+                write_spawned_from
+            fi
+        fi
+        if [[ ! -f "$suborigin_file" ]]
+        ## if there is no suborigin file then write one.
+        then
+            #printf '\n%s %s\n' "suborigin_file is set to:" "$suborigin_file"
+            printf '%s\n' "$origin" > "$suborigin_file"
+        fi
+        if [[ ! -f "$group_file" ]]
+        ## if there is no group file then write one.
+        then
+            #printf '\n%s %s %s %s\n' "Printing" "$origin" "to" "$group_file"
+
+            printf '%s %s\n' "$origin" "$repo" > "$group_file"
+
+        fi
+        if [[ ! -f "$origin_list_file" ]] && [[ ! -f "$origin_list_file_old" ]]
+        ## if there is no origin list file or old origin list file then we want to grab all dependencies.
+        then
+        ## allows us a start with all the dependency base names as defined in lbf.vars
+            for depbase in "${checkdeps_pkgbuild_array[@]}"
+            do
+                if [[ "$i" = "" ]]
+                ## Keep a record of the for loop increment. This is used
+                ## To keep checkdeps_array in line with the checkdeps_pkgbuild_array
+                then
+                    local i=0
+                fi
+                ## this allows the proceeding for loop to activate correctly.
+                ## by referencing what is actually in depbase.
+                typeset -n local ref="$depbase"
+
+                for dep in "${ref[@]}"; do ## sets origin_set.
+                    local depname=${dep%%[<>=]*} ## Removes versioning if neccessary.
+                    find_nextsearchdir "$depname" ## Finds the next search directory.
+                    if [[ "$depname" != "" ]] && [[ "$nosearchdir" = "0" ]]
+                    ## make sure the depname is not blank and that the search directory exists.
+                    then
+                    ## make sure the depname is not already in the suborigin file.
+                        check_todo "$depname" "$suborigin_file"
+                        if [[ "$match" = "0" ]]
+                        then
+                          ## Write the origin list and suborigin file.
+                          printf '%s\n' "$depname" >> "$origin_list_file"
+                          printf '%s\n' "$depname" >> "$suborigin_file"
+                          #printf '\n%s %s\n' "Creating directory:" "$tmpdir/$depbase/$depname"
+                          ## create the directory structure.
+                          mkdir -p "$tmpdir/$depbase/$depname"
+                          #read
+                        fi
+                    fi
+                    ## print the name to checkdeps_array as defined in lbf.vars
+                    ## This will either be deps, checkdeps or makedeps.
+                    printf '%s\n' "$depname" >> "$tmpdir/${checkdeps_array[$i]}"
+                done
+                i="$i"+1 ## increment i so checkdeps_array moves forward with checkdeps_pkgbuild_array.
+            done
+        fi
+}
+
+find_origin_lists() {
+    origin_lists=( $( find "$origin_tmpdir" -name origin_list -type f -print ) ) ## find any existsing origin lists.
+}
+
+find_nextsearchdir() {
+    local name="$1" ## Sets the name being searched of the next program.
+    ## finds the program within the git repository.
+    local nextsearchdir=$( find "$gitrepodir" -name "$name" -type d -print0 )
+    ## resets nosearchdir to default.
+    nosearchdir="0"
+    if [[ "$nextsearchdir" = "" ]]
+    ## if next searchdir is blank then set 1 to signify failure.
+    then
+        nosearchdir="1"
+    fi
+}
+
+recurse() {
+    if [[ "$level" = "" ]]
+    ## I am pretty sure I was setting this up to be able to reference
+    ## allowing only a certain number of runs to be sent through the
+    ## system.
+    then
+        local i=0
+    fi
+    ## Make sure you can find origin lists and loop through them.
+    while find_origin_lists; do
+        ## find a list of origin lists to use.
+        find_origin_lists
+        if [[ "$origin_lists" = "" ]]
+        ## if there are no origin lists then break out of the loop.
+        then
+            break
+        fi
+        ## go through each origin list file.
+        for origin_list_file in "${origin_lists[@]}"; do
+            if [[ -f "$origin_list_file" ]]
+            ## make sure the origin list file exists.
+            then
+                while IFS= read -r dep; do ## read each line of the origin list.
+                    if [[ "$dep" != "" ]]
+                      ## make sure the entry is not blank.
+                    then
+                    ## Make sure the dep is not already in origin file.
+                        check_todo "$dep" "$origin_file"
+                        if [[ "$match" = "0" ]]
+                        then
+                            ## find the next tmpdir location as created in the current iteration of the program.
+                            tmpdir=$( find "$origin_tmpdir" -name "$dep" -type d -print0 )
+                            #printf '\n sending tmpdir as searched from origin_tmpdir as searched from %s: \n%s\n%s\n' "$dep" "$tmpdir" "$origin_tmpdir"
+                            ## set the options in which checkdeps should use on the next run.
+                            run_again_opts=( "-n" "$dep" "-t" "$tmpdir" "-f" "$origin_file" "-o" "$origin_tmpdir" "-S" "$suborigin_file" )
+                            if [[ "$group_file" != "" ]]
+                            ## If the group file is not blank then add group options.
+                            then
+                                #printf '\n%s %s\n' "Setting group_file run_again_opts:" "$group_file"
+                                run_again_opts+=( "-G" "$group_file" )
+                            fi
+                            if [[ "$step" = "yes" ]]
+                            ## If the user set step through keep that for next runs.
+                            then
+                                run_again_opts+=( "-s" "$step" )
+                            fi
+                            #printf '\n%s\n' "run_again_opts equals:"
+                            #printf '%s\n' "${run_again_opts[@]}"
+                            ## do the next run of the program.
+                            "$run_again" "${run_again_opts[@]}"
+                        fi
+                    fi
+                done < "$origin_list_file" ## read the origin list file into the while loop.
+                if [[ "$origin_list_old" = "" ]]
+                ## Check if origin list old has been set and if not set it so we do not redundantly
+                ## check things that have already been checked.
+                then
+                    printf '\n%s\n' "Doing a recursive scan ... This may take a while."
+                fi
+                ## Set the origin list old file location.
+                local origin_list_old="$origin_list_file""_old"
+                #printf '\n%s %s %s %s\n' "Moving origin_list:" "$origin_list_file" "to" "$origin_list_old"
+                #read
+                ## set the options to pass to the move command and then move the origin list to origin list old.
+                local mv_opts=( "$origin_list_file" "$origin_list_old" ) ## Moving the origin_list to another file allows to check
+                mv "${mv_opts[@]}" ## whether the check has been done before or not.
+            fi
+        done
+    done
+}
+
+give_info() { ## Get the information we created during the scans and print it.
+  ## info dir will contain the directory that the created files are located.
+    local info_dir=$( find "$tmpdir" -name "$name" -type d -print0 )
+    cd "$info_dir" || exit ## cd into the directory if it exists, if not exit.
+    ## check all files in the info_dir.
+    for file in *; do
+        if [[ ! -d "$file" ]]
+        ## make sure this is not a directory because we will be printing out information
+        ## that comes from a file.
+        then
+      ## make sure we do not print old origin lists, suborigins or origins.
+      ## These files contain a lot of data that is used for logic and not
+      ## used for useful display information.
+            if [[ "$file" != "origin_list_old" ]]
+            then
+                if [[ "$file" != "origin" ]]
+                then
+                    if [[ "$file" != "suborigin" ]]
+                    then
+                        printf '\n%s: %s\n' "Printing out information for" "$file"
+                        cat "$file"
+                    fi
+                fi
+            fi
+        fi
+    done
+    printf '\n'
+}
+
+setup(){
+    if [[ "$create_group" = "yes" ]]
+    ## If the user passed a group into the system then deal with that.
+    then
+        create_group_origin
+    elif [[ "$create_group" = "" ]]
+    ## Do the actual tasks.
+    then
+        if [[ "$step" = "yes" ]]
+        ## this allows the user to step through iterations of the program.
+        then
+            printf '%s %s\n%s' "Running Scan on:" "$name" "Press enter to continue:"
+            read < /dev/tty
+        fi
+        ## setup the parameters of the program and create the origins.
+        set_params
+        create_origins
+    fi
+    if [[ "$recursive" = "yes" ]]
+    then
+    ## recurse if neccessary.
+        recurse
+    fi
+}
+
+main(){
+  if [[ "$info" != "yes" ]]
+  ## if the user is not looking for information then run the setup.
+  then
+      setup
+  fi
+  if [[ "$info" = "yes" ]]
+  ## if the user requested information then give them info.
+  then
+      give_info
+  fi
+  exit 0
+}
+main

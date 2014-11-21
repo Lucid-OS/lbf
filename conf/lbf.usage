@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+##Created by Edward "edge226" Tunnah.
+
+## Here is a basic template to make creating new entries easier.
+## This is the minimum amount of information that a help usage should
+## have.
+clean_template_usage="
+Name:
+
+Description:
+
+Usage:
+
+Options:
+
+Examples:
+
+"
+
+checkdeps_usage="
+Name:       checkdeps
+
+Description:  checkdeps checks the depends, makedepends and
+        checkdepends of a PKGBUILD file. Checkdeps can operate
+        recursively on a single package or can operated via
+        a package group. It also accumulates useful information
+        on every package that has been scanned into the
+        dependency chain tree that is then searchable.
+
+        The current git location it scans is set to /var/abs and
+        the dependency chain tree is stored in /tmp/lbf but I
+        may change the location to be within /var so the files
+        are not removed when the user reboots.
+
+Usage:      checkdeps <Options>
+
+Options:
+
+        Although there are more flags than this used by the
+        program these are the only ones that should be used
+        by the user. All other flags are to be implemented
+        or used by the recursion mechanism.
+
+  -n      This flag is used to set the name of the package you are
+        either doing a check on the dependency chain or
+        gathering information.
+
+        This flag should be the last one used and is the only
+        flag that takes an argument.
+
+        Leaving this blank will cause the program to ask for a
+        package name to search.
+
+  -r      This will cause the program to go into recursive mode
+        for a single program dependency check. If the -g option
+        is used checkdeps automatically turns on recursive mode.
+
+  -g      This will cause the program to go into recursive mode
+        for a package group eg. base base-devel. This mode
+        automatically turns on the -r flag.
+
+  -s      This mode is to be used in conjunction with the -r and
+        -g flags. It will step through each iteration of the
+        recursion methods so once I have a verbose and/or debug
+        flag you can see what each iteration of the recursion
+        does.
+
+  -i      This flag will produce information on the searched
+        program. It must be an entry that has already been
+        populated by one of the non informational flags.
+
+Examples:
+
+    checkdeps
+
+    checkdeps -n gcc
+
+    checkdeps -rn gcc
+
+    checkdeps -gn base-devel
+
+    checkdeps -in gcc
+
+"
+
+checklinks_usage="
+Name:     check-links
+
+Description:    Verifies the existence of all files needed to preform a buld on a package. This program needs a little work.
+
+Usage:    check-links -vn <program name>.
+
+Options: See above. Thats the only thing that works right now.
+
+Examples:  See usage.
+
+"

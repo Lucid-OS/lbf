@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+##Created by Edward "edge226" Tunnah.
+
+## This is the script that actually builds the packages in the build
+## area and then moves everything out of the respective build areas into
+## a staging area to be processed. This script should always be run
+## through the shorter lb command instead of manually since it will always
+## pass the parameters in the same way.
+
+## Deal with incoming parameters here.
+repo="$3" ## location for the repository to go. Packages go here.
+checklinks="$5" ## Tells the program whether to check for links or not.
+
+## Set parameters for the program to be able to move all the resulting
+## packages where they need to go.
+pkgext=".pkg.tar.xz" ## This mixed with $buildarch allows me to know the pkg.
+pkgname="$(basename $(pwd))" ## Grab the package name via the source build dir.
+
+## Set parameters for the program to be able to move all the resulting
+## packages where they need to go.
+repopkgdir="$repo/packages/"    ## The location of the compiled binary packages.
+reposrcdir="$repo/sources/$pkgname/" ## The source tarbal location.
+repologdir="$repo/logs/$pkgname/" ## The debug and log location.
+
+## Create the appropriate repository directories.
+mkdir -p "$repopkgdir" "$repologdir" "$reposrcdir"
+#rm -rf "$repologdir/*"
+
+if [ ! -d "$buildroot" ]; then ## If the build root directory does not exist then create it.
+    cleanbuildroot -b "$buildroot"  ## Since cleanbuildroot builds a new build root this will create a new one if it doesnt exist.
+fi
+
+if [ "$checklinks" = "yes" ]; then  ## This is default usage.
+    check-links  ## Runs the checklinks program to check if all the links
+fi ## in the PKGBUILD file are able to be downloaded.
+
+## Do the build.
+printf "Building %s for the %s architecture.\n" "$pkgname" "$buildarch"
+printf "The packages, sources and log directory for this build are: \n"
+printf "%s\n%s\n%s\n" "$repopkgdir" "$reposrcdir" "$repologdir"
+if [ "$pretend" = "no" ]; then
+    if [ "$verbose" = "yes" ]; then
+        rm -rf /var/lib/lucidbuild/lucid-x86_64/*/build
+        "$compilecmd"
+    elif [ "$verbose" = "no" ]; then
+        rm -rf /var/lib/lucidbuild/lucid-x86_64/*/build
+        "$compilecmd" > "$compilecmd-$pkgname.log"
+    fi
+fi
+
+## Move the Sources, Packages and logs to the appropriate directories.
+## also has the benefitted effect of cleaning the working directory.
+## Things are done in this order for this reason:
+## debug and logging information are moved first because each of those
+## categories of files may contain files ending in $pkg.
+## Next we move all packages that were created in the process.
+## This leaves only source tarballs that we can move at the end.
+## I have found instances where this will leave the build directory with more files than it started with.
+## I will have to write an algorithm to deal with this. 
+printf "Moving files into their appropriate places.\n"
+printf "Getting a few errors here is expected.\n"
+if [ "$pretend" = "no" ]; then
+    
+    # If a git build from a branch is used then make sure we clean up after it.
+    if [ -d ./*/ ]; then
+        rm -rf ./*/
+    fi
+fi
+
+printf "Moving build information from $build stage in case of failure.\n\n"
+if [ "$pretend" = "no" ]; then
+    if [ "$buildarch" = "x86_64" ]; then
+        cp -R /var/lib/lucidbuild/lucid-x86_64/*/build "$repologdir"
+    elif [ "$buildarch" = "i686" ]; then
+        cp -R /var/lib/lucidbuild/lucid-i686/*/build "$repologdir"
+    fi
+fi

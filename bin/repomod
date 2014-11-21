@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+##Created by Edward "edge226" Tunnah.
+
+## This program will be used to modify the package and git repositories.
+## What repository is modified depends on the flags sent to the program.
+
+
+
+## Source information to be used within this program. 
+
+## This will backup the logfiles used during compilation or previous builds.
+backup_logs() {
+	mkdir "$repologdir/"$(date +%d%m%y)
+	mv "$repologdir/*" "$repologdir/"$(date +%d%m%y)"/"
+}
+
+## This will compare filenames of two different arrays. 
+## This will ensure that we are able to copy all files to the correct
+## places. Even if the files do not have expected file extensions.
+compare_filenames() {
+	
+}
+
+## This is a quick code rebase from lucid-build. It is going to need
+## some different modifications to this section to be accurate.
+move_files() {
+	
+}
+	## This came from move_files
+	### Copying this before $pkg makes sure all debug files have been moved to the correct place.
+	#mv *debug* "$repologdir"
+	### This does contain some tar files so I copy it before $pkg. This leaves only $pkg and $src info left
+	#mv *.log "$repologdir"
+	#mv *"$buildarch$pkgext" "$repopkgdir" ## Copy the pkg into the repo.
+    #mv *"multilib$pkgext" "$repopkgdir" ## Copy multilib packages into the repo, make sure to use -m through lb.
+    #mv *"any$pkgext" "$repopkgdir" ## Copy any files for all architectures were compiled move them into the repo.
+    #mv *.tar.* "$reposrcdir" ## Copy all remaining tarballs into the src directory.
