@@ -14,3 +14,6 @@ Fix some regressions.
 * This required another file to be created that is not created when the program does its work on a single file. This is fairly easy to fix I just have not gotten around to it.
 
 Update the program to be able to search entire repositories at a time. This will essentially use similar logic to checking the groups. But again will be slightly different since I am not getting the information from pacman but will rather be creating the list from already existing files within the filesystem.
+
+[Back to lbf documentation.](../index.html) |
+---- | ----

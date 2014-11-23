@@ -61,3 +61,6 @@ The origin_list file created in Stage 1 is read and goes through the following p
 ##### Stage 3.
 
 Essentially Stage 3 consist of a recursive action upon Stage 2. We now have many origin_list files and each one of them is processed as described in Stage 2. The recursion only stops when there are no more origin_list files to process.
+
+[Back to lbf documentation.](../index.html) | [Back to checkdeps index.](index.html)
+---- | ----
