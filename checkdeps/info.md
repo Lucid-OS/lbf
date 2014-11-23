@@ -34,8 +34,8 @@ In this stage preliminary data is obtained that allows us to start scanning PKGB
 2. The working directory for the search is created.
 3. Each entry is checked against the origin file to make sure it has not already gone through the scanning process.
 4. Each entry is checked against the suborigin file so we do not add entries to the suborigin file twice.
-5. We check to see if there is an origin_list_old file. If there is, we do not do a search for this.
-6. If the entry needs to be processed it is added to the suborigin file and the appropriate origin_list file.
+5. We check to see if there is an origin_list_old file. If there is, We do not do a search for this.
+6. If the entry needs to be processed, It is added to the suborigin file and the appropriate origin_list file.
 7. We now have an origin_list file to work from.
 
 
