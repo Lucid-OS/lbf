@@ -2,7 +2,7 @@
 
 #### origin, suborigin, origin_list, origin_list_old and origin_"search name"
 
-##### What each of these files do:
+#### What each of these files do:
 
 ##### Origin Files.
 
@@ -26,9 +26,9 @@ treeloc | The location in the checkdeps tree. This can be used to find the packa
 spawned_from | What originated the search on this package.
 repo | The repository name and location of the PKGBUILD file.
 
-##### How the origin system works.
+#### How the origin system works.
 
-* ##### Stage 1.
+##### Stage 1.
 
 In this stage preliminary data is obtained that allows us to start scanning PKGBUILD files.
 
@@ -41,7 +41,7 @@ In this stage preliminary data is obtained that allows us to start scanning PKGB
 7. We now have an origin_list file to work from.
 
 
-* ##### Stage 2.
+##### Stage 2.
 
 In this stage we have the data required to scan and gather more information about each PKGBUILD file.
 
@@ -60,6 +60,6 @@ The origin_list file created in Stage 1 is read and goes through the following p
 11. The next package from the Stage 1 is processed, Repeating Stage 2. When there are no more entries in the origin_list file we move onto Stage 3.
 
 
-* ##### Stage 3.
+##### Stage 3.
 
 Essentially Stage 3 consist of a recursive action upon Stage 2. We now have many origin_list files and each one of them is processed as described in Stage 2. The recursion only stops when there are no more origin_list files to process.

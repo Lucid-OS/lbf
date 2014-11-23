@@ -101,7 +101,7 @@
 
 <h4>origin, suborigin, origin_list, origin_list_old and origin_&quot;search name&quot;</h4>
 
-<h5>What each of these files do:</h5>
+<h4>What each of these files do:</h4>
 
 <h5>Origin Files.</h5>
 
@@ -171,11 +171,9 @@
 </tr>
 </tbody></table>
 
-<h5>How the origin system works.</h5>
+<h4>How the origin system works.</h4>
 
-<ul>
-<li>##### Stage 1.</li>
-</ul>
+<h5>Stage 1.</h5>
 
 <p>In this stage preliminary data is obtained that allows us to start scanning PKGBUILD files.</p>
 
@@ -186,12 +184,10 @@
 <li>Each entry is checked against the suborigin file so we do not add entries to the suborigin file twice.</li>
 <li>We check to see if there is an origin_list_old file. If there is we do not do a search for this.</li>
 <li>If the entry needs to be processed it is added to the suborigin file and the appropriate origin_list file.</li>
-<li><p>We now have an origin_list file to work from.</p></li>
+<li>We now have an origin_list file to work from.</li>
 </ol>
 
-<ul>
-<li>##### Stage 2.</li>
-</ul>
+<h5>Stage 2.</h5>
 
 <p>In this stage we have the data required to scan and gather more information about each PKGBUILD file.</p>
 
@@ -208,12 +204,10 @@
 <li>What the package provides is written to the provides file.</li>
 <li>The origin_&quot;search name&quot; file is written to include all searches on this particular search.</li>
 <li>The origin file is written with the package name that was processed.</li>
-<li><p>The next package from the Stage 1 is processed, Repeating Stage 2. When there are no more entries in the origin_list file we move onto Stage 3.</p></li>
+<li>The next package from the Stage 1 is processed, Repeating Stage 2. When there are no more entries in the origin_list file we move onto Stage 3.</li>
 </ol>
 
-<ul>
-<li>##### Stage 3.</li>
-</ul>
+<h5>Stage 3.</h5>
 
 <p>Essentially Stage 3 consist of a recursive action upon Stage 2. We now have many origin_list files and each one of them is processed as described in Stage 2. The recursion only stops when there are no more origin_list files to process.</p>
 
