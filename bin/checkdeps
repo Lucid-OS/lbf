@@ -108,7 +108,7 @@ create_group_origin() { ## sets all information if a group name is sent
             ## write the dep to an origin list and the suborigin file.
             printf '%s\n' "$depname" >> "$tmpdir/origin_list"
             printf '%s\n' "$depname" >> "$tmpdir/suborigin"
-            printf '\n%s\n%s %s %s %s %s\n' "point 1-group" "$depname" "has been written to" "$tmpdir/suborigin" "and" "$tmpdir/origin_list"
+            #printf '\n%s\n%s %s %s %s %s\n' "point 1-group" "$depname" "has been written to" "$tmpdir/suborigin" "and" "$tmpdir/origin_list"
             #read < /dev/tty
         fi
     done
@@ -372,8 +372,8 @@ write_deps() {
   ## This will either be deps, checkdeps or makedeps.
   local depname="$1"
   local filename="$2"
-  printf '\n%s %s %s %s\n' "Writing" "$depname" "to" "$tmpdir/$filename"
-  #printf '%s\n' "$depname" >> "$tmpdir/$filename"
+  #printf '\n%s %s %s %s\n' "Writing" "$depname" "to" "$tmpdir/$filename"
+  printf '%s\n' "$depname" >> "$tmpdir/$filename"
 }
 
 ## Sets the origin name. This is important for dealing with nested
@@ -423,6 +423,15 @@ create_origins() { ## creates an origin set that gathers data used in nesting.
             ## by referencing what is actually in depbase.
             typeset -n local ref="$depbase"
 
+            if [[ ! -f "$suborigin_file" ]]
+              ## if there is no suborigin file then write one.
+              then
+              #printf '\n%s %s\n' "suborigin_file is set to:" "$suborigin_file"
+              printf '%s\n' "$origin" > "$suborigin_file"
+              #printf '\n%s\n%s %s %s\n' "point 1-program" "$origin" "has been written to" "$suborigin_file"
+              #read < /dev/tty
+            fi
+
             for dep in "${ref[@]}"; do ## sets origin_set.
               local depname=${dep%%[<>=]*} ## Removes versioning if neccessary.
               find_nextsearchdir "$depname" ## Finds the next search directory.
@@ -444,29 +453,12 @@ create_origins() { ## creates an origin set that gathers data used in nesting.
                   #read
                 fi
               fi
+              write_deps "$depname" "${checkdeps_array[$i]}"
             done
-            write_deps "$depname" "${checkdeps_array[$i]}"
             i="$i"+1 ## increment i so checkdeps_array moves forward with checkdeps_pkgbuild_array.
           done
         fi
 
-        if [[ ! -f "$suborigin_file" ]]
-          ## if there is no suborigin file then write one.
-          then
-          #printf '\n%s %s\n' "suborigin_file is set to:" "$suborigin_file"
-          printf '%s\n' "$origin" > "$suborigin_file"
-          #printf '\n%s\n%s %s %s\n' "point 1-program" "$origin" "has been written to" "$suborigin_file"
-          #read < /dev/tty
-        fi
-
-        if [[ ! -f "$group_file" ]]
-          ## if there is no group file then write one.
-          then
-          #printf '\n%s %s %s %s\n' "Printing" "$origin" "to" "$group_file"
-
-          printf '%s %s\n' "$origin" "$repo" > "$group_file"
-
-        fi
         if [[ ! -f "$origin_file" ]]
           ## if the origin file does not exist then write the appropriate information to it.
           then
@@ -476,7 +468,7 @@ create_origins() { ## creates an origin set that gathers data used in nesting.
             touch "$origin_file"
           fi
         fi
-
+        check_todo "$origin" "$origin_file"
         if [[ -f "$origin_file" ]]
         ## If the origin file already exists we have no reason to touch
         ## the file to make sure it exists.
@@ -493,6 +485,13 @@ create_origins() { ## creates an origin set that gathers data used in nesting.
                 write_origin_file
             fi
         fi
+
+        #if [[ ! -f "$group_file" ]]
+          ## if there is no group file then write one.
+        #  then
+          #printf '\n%s %s %s %s\n' "Printing" "$origin" "to" "$group_file"
+        #  printf '%s %s\n' "$origin" "$repo" > "$group_file"
+        #fi
 }
 
 find_origin_lists() {
