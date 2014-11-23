@@ -1,8 +1,6 @@
 ### Information on the metadata checkdeps creates.
 
-#### origin, suborigin, origin_list, origin_list_old and origin_"search name"
-
-#### What each of these files do:
+#### What each of the files do:
 
 ##### Origin Files.
 
