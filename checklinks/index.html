@@ -97,59 +97,17 @@
 
     <section id="main_content">
 
-<h3>What is the Linux Build Framework?</h3>
+<h3>What&#39;s up with checklinks?</h3>
 
-<p>The Linux Build Framework is a set of bash scripts that help with a variety of Linux distribution creation tasks.</p>
+<p>At the moment some things are not fully functional within check links, This is due to me coding it to work from within the old lucid-build framework which was not modular and extendable.</p>
 
-<p>I will hereby refer to the Linux Build Framework as lbf for short.</p>
+<p>In order to fix things I have to break a lot of things too. The bottom line is that this kind of sucks. I am working to fix and make everything more modular however things need to be done in the appropriate order.</p>
 
-<h3>What does the framework do?</h3>
+<h3>How do I use checklinks?</h3>
 
-<ul>
-<li>lbf is a framework that helps developers build linux distributions.</li>
-</ul>
+<p>Check links can be used with the <code>check-links -vn</code> command. Where the -n flag takes in the name of a package from the ABS at this time.</p>
 
-<h3>What is included in lbf?</h3>
-
-<ul>
-<li>In the current state lbf is in heavy development and is currently experimental.</li>
-</ul>
-
-<p>Here is a list of programs and or future functionality that will be provided by lbf:</p>
-
-<table><thead>
-<tr>
-<th>name</th>
-<th>state</th>
-<th>description</th>
-</tr>
-</thead><tbody>
-<tr>
-<td><code>checklinks</code></td>
-<td>semi-complete</td>
-<td>Checks the links within a PKGBUILD and verifies that the programs exist.</td>
-</tr>
-<tr>
-<td><a href="checkdeps/index.html">checkdeps</a></td>
-<td>semi-complete</td>
-<td>Recursively checks dependencies of packages, groups of packages or entire repositories.</td>
-</tr>
-<tr>
-<td><code>cleanbuildroot</code></td>
-<td>old</td>
-<td>Removes the chroot build directory and creates a new one.</td>
-</tr>
-<tr>
-<td><code>lbf</code></td>
-<td>old</td>
-<td>Leftover from the old lucid-build branch. The logic will be examined and used at a later time.</td>
-</tr>
-<tr>
-<td><code>repomod</code></td>
-<td>Work in Progress</td>
-<td>This script will modify the repository structure within the git repositories.</td>
-</tr>
-</tbody></table>
+<p>Other functionality will not work due to the permissions within the ABS directory.</p>
 
     </section>
   </div>

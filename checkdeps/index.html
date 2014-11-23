@@ -97,59 +97,28 @@
 
     <section id="main_content">
 
-<h3>What is the Linux Build Framework?</h3>
+<h3>What does checkdeps do?</h3>
 
-<p>The Linux Build Framework is a set of bash scripts that help with a variety of Linux distribution creation tasks.</p>
+<p>The checkdeps script will recursively find package dependencies, make dependencies and check dependencies. It is purely an informational tool for sorting git repositories that contain PKGBUILD files.</p>
 
-<p>I will hereby refer to the Linux Build Framework as lbf for short.</p>
+<p>checkdeps is currently incomplete, It does create and provide a lot of useful data though.</p>
 
-<h3>What does the framework do?</h3>
-
-<ul>
-<li>lbf is a framework that helps developers build linux distributions.</li>
-</ul>
-
-<h3>What is included in lbf?</h3>
+<h3>How does it work?</h3>
 
 <ul>
-<li>In the current state lbf is in heavy development and is currently experimental.</li>
+<li><a href="info.html">Checkdeps origin system information.</a></li>
 </ul>
 
-<p>Here is a list of programs and or future functionality that will be provided by lbf:</p>
+<h3>What is the plan with checkdeps?</h3>
 
-<table><thead>
-<tr>
-<th>name</th>
-<th>state</th>
-<th>description</th>
-</tr>
-</thead><tbody>
-<tr>
-<td><code>checklinks</code></td>
-<td>semi-complete</td>
-<td>Checks the links within a PKGBUILD and verifies that the programs exist.</td>
-</tr>
-<tr>
-<td><a href="checkdeps/index.html">checkdeps</a></td>
-<td>semi-complete</td>
-<td>Recursively checks dependencies of packages, groups of packages or entire repositories.</td>
-</tr>
-<tr>
-<td><code>cleanbuildroot</code></td>
-<td>old</td>
-<td>Removes the chroot build directory and creates a new one.</td>
-</tr>
-<tr>
-<td><code>lbf</code></td>
-<td>old</td>
-<td>Leftover from the old lucid-build branch. The logic will be examined and used at a later time.</td>
-</tr>
-<tr>
-<td><code>repomod</code></td>
-<td>Work in Progress</td>
-<td>This script will modify the repository structure within the git repositories.</td>
-</tr>
-</tbody></table>
+<p>Fix some regressions.</p>
+
+<ul>
+<li>While programming checkdeps I started the logic on a single program, Then I made it able to search entire package groups at a time.</li>
+<li>This required another file to be created that is not created when the program does its work on a single file. This is fairly easy to fix I just have not gotten around to it.</li>
+</ul>
+
+<p>Update the program to be able to search entire repositories at a time. This will essentially use similar logic to checking the groups. But again will be slightly different since I am not getting the information from pacman but will rather be creating the list from already existing files within the filesystem.</p>
 
     </section>
   </div>

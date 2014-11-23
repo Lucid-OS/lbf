@@ -97,59 +97,119 @@
 
     <section id="main_content">
 
-<h3>What is the Linux Build Framework?</h3>
+<h3>Information on the metadata checkdeps creates.</h3>
 
-<p>The Linux Build Framework is a set of bash scripts that help with a variety of Linux distribution creation tasks.</p>
+<h4>origin, suborigin, origin_list, origin_list_old and origin_&quot;search name&quot;</h4>
 
-<p>I will hereby refer to the Linux Build Framework as lbf for short.</p>
+<h5>What each of these files do:</h5>
 
-<h3>What does the framework do?</h3>
-
-<ul>
-<li>lbf is a framework that helps developers build linux distributions.</li>
-</ul>
-
-<h3>What is included in lbf?</h3>
-
-<ul>
-<li>In the current state lbf is in heavy development and is currently experimental.</li>
-</ul>
-
-<p>Here is a list of programs and or future functionality that will be provided by lbf:</p>
+<h5>Origin Files.</h5>
 
 <table><thead>
 <tr>
-<th>name</th>
-<th>state</th>
-<th>description</th>
+<th>Name</th>
+<th>Description</th>
 </tr>
 </thead><tbody>
 <tr>
-<td><code>checklinks</code></td>
-<td>semi-complete</td>
-<td>Checks the links within a PKGBUILD and verifies that the programs exist.</td>
+<td>origin</td>
+<td>Keeps track of all packages that have already been checked. This list includes packages that have no PKGBUILD file itself.</td>
 </tr>
 <tr>
-<td><a href="checkdeps/index.html">checkdeps</a></td>
-<td>semi-complete</td>
-<td>Recursively checks dependencies of packages, groups of packages or entire repositories.</td>
+<td>suborigin</td>
+<td>Keeps track of all packages to be checked. This is the global check file.</td>
 </tr>
 <tr>
-<td><code>cleanbuildroot</code></td>
-<td>old</td>
-<td>Removes the chroot build directory and creates a new one.</td>
+<td>origin_list</td>
+<td>This is used to create the recursive capabilities of the origin system. These files are created for each search list needed. Each step of recursion will have its own orgin_list file. The starting search parameter will have an origin_list file and every dependency will have its own origin_list file.</td>
 </tr>
 <tr>
-<td><code>lbf</code></td>
-<td>old</td>
-<td>Leftover from the old lucid-build branch. The logic will be examined and used at a later time.</td>
+<td>origin_list_old</td>
+<td>Once an origin list has been scanned and checked the origin_list is renamed to origin_list_old. This prevents checking of packages that have already been checked.</td>
 </tr>
 <tr>
-<td><code>repomod</code></td>
-<td>Work in Progress</td>
-<td>This script will modify the repository structure within the git repositories.</td>
+<td>origin_&quot;search name&quot;</td>
+<td>Search name will be the search parameter you send at checkdeps using the -n flag. This keeps track of all dependencies created within a single search, What originated the search for this package and the repository name of where this package is located.</td>
 </tr>
 </tbody></table>
+
+<h5>Metadata files created by checkdeps.</h5>
+
+<table><thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>deps</td>
+<td>Dependencies of the package.</td>
+</tr>
+<tr>
+<td>makedeps</td>
+<td>Make dependencies of the package.</td>
+</tr>
+<tr>
+<td>checkdeps</td>
+<td>Check dependencies of the package.</td>
+</tr>
+<tr>
+<td>provides</td>
+<td>Packages the PKGBUILD provides that will not have their own PKGBUILD file.</td>
+</tr>
+<tr>
+<td>treeloc</td>
+<td>The location in the checkdeps tree. This can be used to find the package information in the created tree.</td>
+</tr>
+<tr>
+<td>spawned_from</td>
+<td>What originated the search on this package.</td>
+</tr>
+<tr>
+<td>repo</td>
+<td>The repository name and location of the PKGBUILD file.</td>
+</tr>
+</tbody></table>
+
+<h5>How the origin system works.</h5>
+
+<h6>Stage 1.</h6>
+
+<p>In this stage preliminary data is obtained that allows us to start scanning PKGBUILD files.</p>
+
+<ol>
+<li>The initial scan of the pkg or group is created and placed in an array list.</li>
+<li>The working directory for the search is created.</li>
+<li>Each entry is checked against the origin file to make sure it has not already gone through the scanning process.</li>
+<li>Each entry is checked against the suborigin file so we do not add entries to the suborigin file twice.</li>
+<li>We check to see if there is an origin_list_old file. If there is we do not do a search for this.</li>
+<li>If the entry needs to be processed it is added to the suborigin file and the appropriate origin_list file.</li>
+<li>We now have an origin_list file to work from.</li>
+</ol>
+
+<h6>Stage 2.</h6>
+
+<p>In this stage we have the data required to scan and gather more information about each PKGBUILD file.</p>
+
+<p>The origin_list file created in Stage 1 is read and goes through the following process:</p>
+
+<ol>
+<li>A directory is created with the name of the program in the appropriate location.</li>
+<li>The PKGBUILD for the package is scanned.</li>
+<li>As dependencies are checked they are written to the suborigin and origin_list file.</li>
+<li>The dependency information is written to the corresponding deps, checkdeps or makedeps file.</li>
+<li>The repo information is written to the repo file.</li>
+<li>The location within the checkdeps tree are written to the treeloc file.</li>
+<li>The information of what originated the program search is written to the spawned_from file.</li>
+<li>What the package provides is written to the provides file.</li>
+<li>The origin_&quot;search name&quot; file is written to include all searches on this particular search.</li>
+<li>The origin file is written with the package name that was processed.</li>
+<li>The next package from the Stage 1 is processed, Repeating Stage 2. When there are no more entries in the origin_list file we move onto Stage 3.</li>
+</ol>
+
+<h6>Stage 3.</h6>
+
+<p>Essentially Stage 3 consist of a recursive action upon Stage 2. We now have many origin_list files and each one of them is processed as described in Stage 2. The recursion only stops when there are no more origin_list files to process.</p>
 
     </section>
   </div>
