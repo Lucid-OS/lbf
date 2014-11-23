@@ -10,7 +10,7 @@ origin | Keeps track of all packages that have already been checked. This list i
 suborigin | Keeps track of all packages to be checked. This is the global check file.
 origin_list | This is used to create the recursive capabilities of the origin system. These files are created for each search list needed. Each step of recursion will have its own orgin_list file. The starting search parameter will have an origin_list file and every dependency will have its own origin_list file.
 origin_list_old | Once an origin list has been scanned and checked the origin_list is renamed to origin_list_old. This prevents checking of packages that have already been checked.
-origin_"search name" | Search name will be the search parameter you send at checkdeps using the -n flag. This keeps track of all dependencies created within a single search, What originated the search for this package and the repository name of where this package is located.
+origin_"search name" | "Search name" will be the search parameter you send at checkdeps using the -n flag. This keeps track of all dependencies created within a single search, What originated the search for this package and the repository name of where this package is located.
 
 ##### Metadata files created by checkdeps.
 
