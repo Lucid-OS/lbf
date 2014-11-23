@@ -4,8 +4,6 @@
 ## Checks the dependencies of a program and writes it to /tmp/lbf/ in a
 ## directory structure.
 
-
-
 ## unset possibly used variables.
 unset pkgname depends makedepends checkdepends optdepends origin tmpdir origin_pass origin_set origin_list
 
@@ -110,6 +108,8 @@ create_group_origin() { ## sets all information if a group name is sent
             ## write the dep to an origin list and the suborigin file.
             printf '%s\n' "$depname" >> "$tmpdir/origin_list"
             printf '%s\n' "$depname" >> "$tmpdir/suborigin"
+            printf '\n%s\n%s %s %s %s %s\n' "point 1-group" "$depname" "has been written to" "$tmpdir/suborigin" "and" "$tmpdir/origin_list"
+            #read < /dev/tty
         fi
     done
 }
@@ -288,9 +288,21 @@ write_provides(){ ## writes the package names that the pkgbuild compile will pro
         then
       ## Write the provides and origin files.
             printf '%s\n' "$pkg" >> "$provides_file"
-            printf '%s\n' "$pkg" >> "$origin_file"
+            #printf '\n%s %s %s\n' "$pkg" "has been written to" "$provides_file"
         fi
     done
+}
+
+write_origin_file(){
+  for pkg in "${provides_array[@]}"; do ## scan through provies array.
+  if [[ "$pkg" != "" ]]
+    ## Check if the name is not blank.
+    then
+    ## Write the origin file.
+    printf '%s\n' "$pkg" >> "$origin_file"
+    #printf '\n%s %s %s\n' "$pkg" "has been written to" "$origin_file"
+  fi
+done
 }
 
 get_repo() { ## removes the program name, forward slashes and prefix of the repository name.
@@ -307,6 +319,7 @@ write_treeloc() { ## writes the treeloc to the treeloc file.
     local treeloc="$tmpdir" ## sets treeloc as the tmpdir variable.
     treeloc=${treeloc##/tmp/lbf/} ## remove the preceeding /tmp/lbf/
     printf '%s\n' "$treeloc" > "$treeloc_file" ## write to the file.
+    #printf '\n%s %s %s %s\n' "Writing" "$treeloc" "to" "$treeloc_file"
 }
 
 get_spawned_from() { ## get where the search spawned from.
@@ -340,6 +353,7 @@ write_spawned_from() { ## writes the spawned from file.
         #fi
         ## write the information to the spawned from file.
         printf '%s\n' "$spawned_from" >> "$spawned_from_file"
+        #printf '\n%s %s %s %s\n' "Writing" "$spawned_from" "to" "$spawned_from_file"
     fi
 }
 
@@ -349,7 +363,17 @@ write_group_file() { ## This function writes the group file.
     #printf '%s %s %s %s\n' "Writing these entries to the group file:" "$origin" "$spawned_from" "$repo"
     ## write them to the group file.
     printf '%s %s %s\n' "$origin" "$spawned_from" "$repo" >> "$group_file"
+    #printf '\n%s %s%s %s %s %s %s %s\n' "Writing" "$origin" "," "$spawned_from" "and" "$repo" "to" "$group_file"
     #read < /dev/tty
+}
+
+write_deps() {
+  ## print the name to checkdeps_array as defined in lbf.vars
+  ## This will either be deps, checkdeps or makedeps.
+  local depname="$1"
+  local filename="$2"
+  printf '\n%s %s %s %s\n' "Writing" "$depname" "to" "$tmpdir/$filename"
+  #printf '%s\n' "$depname" >> "$tmpdir/$filename"
 }
 
 ## Sets the origin name. This is important for dealing with nested
@@ -380,20 +404,80 @@ create_origins() { ## creates an origin set that gathers data used in nesting.
         then
             printf '%s\n' "$repo" > "$repo_file"
             printf '%s\n' "$searchdir" >> "$repo_file"
+            #printf '\n%s %s %s %s %s %s\n' "Writing" "$repo" "and" "$searchdir" "to" "$repo_file"
+        fi
+
+        if [[ ! -f "$origin_list_file" ]] && [[ ! -f "$origin_list_file_old" ]]
+        ## if there is no origin list file or old origin list file then we want to grab all dependencies.
+        then
+        ## allows us a start with all the dependency base names as defined in lbf.vars
+          for depbase in "${checkdeps_pkgbuild_array[@]}"
+          do
+            if [[ "$i" = "" ]]
+            ## Keep a record of the for loop increment. This is used
+            ## To keep checkdeps_array in line with the checkdeps_pkgbuild_array
+            then
+              local i=0
+            fi
+            ## this allows the proceeding for loop to activate correctly.
+            ## by referencing what is actually in depbase.
+            typeset -n local ref="$depbase"
+
+            for dep in "${ref[@]}"; do ## sets origin_set.
+              local depname=${dep%%[<>=]*} ## Removes versioning if neccessary.
+              find_nextsearchdir "$depname" ## Finds the next search directory.
+              if [[ "$depname" != "" ]] && [[ "$nosearchdir" = "0" ]]
+                ## make sure the depname is not blank and that the search directory exists.
+                then
+                ## make sure the depname is not already in the suborigin file.
+                check_todo "$depname" "$suborigin_file"
+                if [[ "$match" = "0" ]]
+                  then
+                  ## Write the origin list and suborigin file.
+                  printf '%s\n' "$depname" >> "$origin_list_file"
+                  printf '%s\n' "$depname" >> "$suborigin_file"
+                  #printf '\n%s\n%s %s %s %s %s\n' "point 2 (recursion)" "$depname" "has been written to" "$suborigin_file" "and" "$origin_list_file"
+                  #read < /dev/tty
+                  #printf '\n%s %s\n' "Creating directory:" "$tmpdir/$depbase/$depname"
+                  ## create the directory structure.
+                  mkdir -p "$tmpdir/$depbase/$depname"
+                  #read
+                fi
+              fi
+            done
+            write_deps "$depname" "${checkdeps_array[$i]}"
+            i="$i"+1 ## increment i so checkdeps_array moves forward with checkdeps_pkgbuild_array.
+          done
+        fi
+
+        if [[ ! -f "$suborigin_file" ]]
+          ## if there is no suborigin file then write one.
+          then
+          #printf '\n%s %s\n' "suborigin_file is set to:" "$suborigin_file"
+          printf '%s\n' "$origin" > "$suborigin_file"
+          #printf '\n%s\n%s %s %s\n' "point 1-program" "$origin" "has been written to" "$suborigin_file"
+          #read < /dev/tty
+        fi
+
+        if [[ ! -f "$group_file" ]]
+          ## if there is no group file then write one.
+          then
+          #printf '\n%s %s %s %s\n' "Printing" "$origin" "to" "$group_file"
+
+          printf '%s %s\n' "$origin" "$repo" > "$group_file"
+
         fi
         if [[ ! -f "$origin_file" ]]
-        ## if the origin file does not exist then write the appropriate information to it.
-        then
-            if [[ "$origin" != "" ]]
+          ## if the origin file does not exist then write the appropriate information to it.
+          then
+          if [[ "$origin" != "" ]]
             ## make sure the origin is not blank before writing the file.
             then
-                touch "$origin_file"
-                write_provides
-                write_treeloc
-                write_group_file "$origin"
-                write_spawned_from
-            fi
-        elif [[ -f "$origin_file" ]]
+            touch "$origin_file"
+          fi
+        fi
+
+        if [[ -f "$origin_file" ]]
         ## If the origin file already exists we have no reason to touch
         ## the file to make sure it exists.
         ## This writes the needed information to the appropriate files.
@@ -402,67 +486,12 @@ create_origins() { ## creates an origin set that gathers data used in nesting.
             ## Makes sure the entry is not already in the origin file
             ## and that the origin is not blank.
             then
-                write_provides
                 write_treeloc
-                write_group_file "$origin"
                 write_spawned_from
+                write_provides
+                write_group_file "$origin"
+                write_origin_file
             fi
-        fi
-        if [[ ! -f "$suborigin_file" ]]
-        ## if there is no suborigin file then write one.
-        then
-            #printf '\n%s %s\n' "suborigin_file is set to:" "$suborigin_file"
-            printf '%s\n' "$origin" > "$suborigin_file"
-        fi
-        if [[ ! -f "$group_file" ]]
-        ## if there is no group file then write one.
-        then
-            #printf '\n%s %s %s %s\n' "Printing" "$origin" "to" "$group_file"
-
-            printf '%s %s\n' "$origin" "$repo" > "$group_file"
-
-        fi
-        if [[ ! -f "$origin_list_file" ]] && [[ ! -f "$origin_list_file_old" ]]
-        ## if there is no origin list file or old origin list file then we want to grab all dependencies.
-        then
-        ## allows us a start with all the dependency base names as defined in lbf.vars
-            for depbase in "${checkdeps_pkgbuild_array[@]}"
-            do
-                if [[ "$i" = "" ]]
-                ## Keep a record of the for loop increment. This is used
-                ## To keep checkdeps_array in line with the checkdeps_pkgbuild_array
-                then
-                    local i=0
-                fi
-                ## this allows the proceeding for loop to activate correctly.
-                ## by referencing what is actually in depbase.
-                typeset -n local ref="$depbase"
-
-                for dep in "${ref[@]}"; do ## sets origin_set.
-                    local depname=${dep%%[<>=]*} ## Removes versioning if neccessary.
-                    find_nextsearchdir "$depname" ## Finds the next search directory.
-                    if [[ "$depname" != "" ]] && [[ "$nosearchdir" = "0" ]]
-                    ## make sure the depname is not blank and that the search directory exists.
-                    then
-                    ## make sure the depname is not already in the suborigin file.
-                        check_todo "$depname" "$suborigin_file"
-                        if [[ "$match" = "0" ]]
-                        then
-                          ## Write the origin list and suborigin file.
-                          printf '%s\n' "$depname" >> "$origin_list_file"
-                          printf '%s\n' "$depname" >> "$suborigin_file"
-                          #printf '\n%s %s\n' "Creating directory:" "$tmpdir/$depbase/$depname"
-                          ## create the directory structure.
-                          mkdir -p "$tmpdir/$depbase/$depname"
-                          #read
-                        fi
-                    fi
-                    ## print the name to checkdeps_array as defined in lbf.vars
-                    ## This will either be deps, checkdeps or makedeps.
-                    printf '%s\n' "$depname" >> "$tmpdir/${checkdeps_array[$i]}"
-                done
-                i="$i"+1 ## increment i so checkdeps_array moves forward with checkdeps_pkgbuild_array.
-            done
         fi
 }
 
