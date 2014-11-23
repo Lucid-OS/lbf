@@ -16,7 +16,7 @@ Here is a list of programs and or future functionality that will be provided by 
 
 name | state | description
 ---- | ---- | ----
-`checklinks` | semi-complete | Checks the links within a PKGBUILD and verifies that the programs exist.
+[checklinks](checklinks/index.html) | semi-complete | Checks the links within a PKGBUILD and verifies that the programs exist.
 [checkdeps](checkdeps/index.html) | semi-complete | Recursively checks dependencies of packages, groups of packages or entire repositories.
 `cleanbuildroot` | old | Removes the chroot build directory and creates a new one.
 `lbf` | old | Leftover from the old lucid-build branch. The logic will be examined and used at a later time.

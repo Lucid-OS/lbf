@@ -8,4 +8,7 @@ In order to fix things I have to break a lot of things too. The bottom line is t
 
 Check links can be used with the `check-links -vn` command. Where the -n flag takes in the name of a package from the ABS at this time.
 
-Other functionality will not work due to the permissions within the ABS directory.
+Other functionality will not work due to the permissions within the ABS directory but will be used later on.
+
+[Back to lbf documentation.](../index.html) |
+---- | ----
