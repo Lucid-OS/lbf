@@ -1,8 +1,8 @@
 ### What is the Linux Build Framework?
 
-The Linux Build Framework is a set of bash scripts that help with a variety of Linux distribution creation tasks.
+The Linux Build Framework is a set of bash scripts that help with a variety of Linux distribution development.
 
-I will hereby refer to the Linux Build Framework as lbf for short.
+I will refer to the Linux Build Framework as lbf in the future.
 
 ### What does the framework do?
 
